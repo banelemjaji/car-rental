@@ -1,86 +1,118 @@
 import Booking from "../models/Booking.js";
 import Car from "../models/Car.js";
 
-// @desc    Create a booking
-// @route   POST /api/bookings
-// @access  Private (User)
+// Create a new booking
 export const createBooking = async (req, res) => {
-  const { carId, startDate, endDate } = req.body;
-  const userId = req.user._id;
-
   try {
-    const car = await Car.findById(carId);
-    if (!car) return res.status(404).json({ message: "Car not found" });
+    const { carId, startDate, endDate } = req.body;
 
-    // Check if the car is already booked during the selected period
+    // Convert dates to standard format
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Check if the end date is after the start date
+    if (start >= end) {
+      return res.status(400).json({ message: "End date must be after start date" });
+    }
+
+    // Check if the car exists
+    const car = await Car.findById(carId);
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    // Check if the car is available for the selected dates
     const existingBooking = await Booking.findOne({
       car: carId,
-      startDate: { $lt: new Date(endDate) },
-      endDate: { $gt: new Date(startDate) },
+      user: req.user.id,
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } } // Check for overlapping dates
+      ]
     });
 
     if (existingBooking) {
-      return res.status(400).json({ message: "Car is already booked for these dates" });
+      return res.status(400).json({ message: "You have already booked this car for the selected dates." });
     }
 
-    const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
-    const totalPrice = days * car.pricePerDay;
-
+    // Create a new booking
     const booking = new Booking({
-      user: userId,
+      user: req.user.id, // Logged-in user
       car: carId,
-      startDate,
-      endDate,
-      totalPrice,
-      status: "pending",
+      startDate: start,
+      endDate: end,
+      totalPrice: car.pricePerDay * ((end - start) / (1000 * 60 * 60 * 24)), // Calculate total price
     });
 
     await booking.save();
-    res.status(201).json(booking);
+    res.status(201).json({
+      message: "Booking confirmed",
+      data: booking,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get all bookings (Admin only)
-// @route   GET /api/bookings
-// @access  Private (Admin)
+// Get all bookings (Admin route)
 export const getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate("user", "name email").populate("car", "brand model");
-    res.json(bookings);
+    const bookings = await Booking.find()
+      .populate('user', 'name email')
+      .populate('car', 'brand model pricePerDay')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: bookings });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get user bookings
-// @route   GET /api/bookings/my
-// @access  Private (User)
+// Get user bookings
 export const getUserBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ user: req.user._id }).populate("car", "brand model");
-    res.json(bookings);
+    const bookings = await Booking.find({ user: req.user.id })
+      .populate('car', 'brand model pricePerDay')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: bookings });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Cancel a booking
-// @route   DELETE /api/bookings/:id
-// @access  Private (User/Admin)
+// Get a specific booking
+export const getBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('user', 'name email')
+      .populate('car', 'brand model pricePerDay');
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.status(200).json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Cancel a booking
 export const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    if (req.user.role !== "admin" && booking.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Check if the user is authorized to cancel this booking
+    if (booking.user.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to cancel this booking" });
     }
 
     await booking.deleteOne();
-    res.json({ message: "Booking cancelled successfully" });
+    res.status(200).json({ success: true, message: "Booking cancelled successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };

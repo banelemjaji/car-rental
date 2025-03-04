@@ -6,9 +6,10 @@ import Car from "../models/Car.js";
 export const getCars = async (req, res) => {
   try {
     const cars = await Car.find();
-    res.json(cars);
+    res.status(200).json({ success: true, data: cars });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error fetching cars:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -20,9 +21,10 @@ export const getCarById = async (req, res) => {
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    res.json(car);
+    res.status(200).json({ success: true, data: car });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error fetching car by ID:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -31,13 +33,30 @@ export const getCarById = async (req, res) => {
 // @access  Private (Admin)
 export const addCar = async (req, res) => {
   try {
-    const { brand, model, year, pricePerDay, available, image } = req.body;
-    const car = new Car({ brand, model, year, pricePerDay, available, image });
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
 
+    const { brand, model, year, pricePerDay, available, image } = req.body;
+
+    // Validate required fields
+    if (!brand || !model || !year || !pricePerDay) {
+      return res.status(400).json({ message: "Please provide all required fields" });
+    }
+
+    // Check if car already exists
+    const existingCar = await Car.findOne({ brand, model, year });
+    if (existingCar) {
+      return res.status(400).json({ message: "Car already exists" });
+    }
+
+    const car = new Car({ brand, model, year, pricePerDay, available, image });
     await car.save();
-    res.status(201).json(car);
+
+    res.status(201).json({ success: true, message: "Car added successfully", data: car });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error adding car:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -46,15 +65,20 @@ export const addCar = async (req, res) => {
 // @access  Private (Admin)
 export const updateCar = async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
+
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
     Object.assign(car, req.body);
     await car.save();
 
-    res.json(car);
+    res.status(200).json({ success: true, message: "Car updated successfully", data: car });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error updating car:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -63,12 +87,17 @@ export const updateCar = async (req, res) => {
 // @access  Private (Admin)
 export const deleteCar = async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
+
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
     await car.deleteOne();
-    res.json({ message: "Car deleted successfully" });
+    res.status(200).json({ success: true, message: "Car deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error deleting car:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

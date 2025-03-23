@@ -45,14 +45,18 @@ const Cars = () => {
           ) : (
             cars.map((car) => (
               <div key={car._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <img
-                  src={car.image}
-                  alt={`${car.brand} ${car.model}`}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.target.src = "/images/default-car.jpg";
-                  }}
-                />
+                <div className="relative h-48 overflow-hidden bg-gray-100">
+                  <img
+                    src={car.image}
+                    alt={`${car.brand} ${car.model}`}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.src = "/images/default-car.jpg";
+                      e.target.onerror = null;
+                    }}
+                  />
+                </div>
                 <div className="p-4">
                   <h2 className="text-xl font-semibold">{car.brand} {car.model}</h2>
                   <p className="text-gray-600">Year: {car.year}</p>

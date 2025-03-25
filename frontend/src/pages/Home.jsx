@@ -20,6 +20,32 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Booking modal states
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState(null);
+
+  // Location suggestions
+  const locations = [
+    "Durban - Pinetown Centre",
+    "Durban - Gateway Mall",
+    "Durban - Musgrave Centre",
+    "Durban - Pavilion Mall",
+    "Durban - Umhlanga Rocks",
+    "Durban - Westville Mall",
+    "Durban - Chatsworth Centre",
+    "Durban - Phoenix Plaza"
+  ];
+
+  // Filtered suggestions
+  const [carSuggestions, setCarSuggestions] = useState([]);
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [dropoffSuggestions, setDropoffSuggestions] = useState([]);
+
+  // Add new state for dropdown visibility
+  const [showCarDropdown, setShowCarDropdown] = useState(false);
+  const [showPickupDropdown, setShowPickupDropdown] = useState(false);
+  const [showDropoffDropdown, setShowDropoffDropdown] = useState(false);
+
   // Fetch cars from backend
   useEffect(() => {
     const fetchCars = async () => {
@@ -42,10 +68,91 @@ const Home = () => {
     fetchCars();
   }, []);
 
+  // Handle input changes for autocomplete
+  const handleCarTypeChange = (e) => {
+    const value = e.target.value;
+    setCarType(value);
+    if (value) {
+      const filtered = cars
+        .filter(car => 
+          `${car.brand} ${car.model}`.toLowerCase().includes(value.toLowerCase())
+        )
+        .map(car => `${car.brand} ${car.model}`);
+      setCarSuggestions(filtered);
+    } else {
+      setCarSuggestions([]);
+    }
+  };
+
+  const handlePickupLocationChange = (e) => {
+    const value = e.target.value;
+    setPickupLocation(value);
+    if (value) {
+      const filtered = locations.filter(loc => 
+        loc.toLowerCase().includes(value.toLowerCase())
+      );
+      setPickupSuggestions(filtered);
+    } else {
+      setPickupSuggestions([]);
+    }
+  };
+
+  const handleDropoffLocationChange = (e) => {
+    const value = e.target.value;
+    setDropoffLocation(value);
+    if (value) {
+      const filtered = locations.filter(loc => 
+        loc.toLowerCase().includes(value.toLowerCase())
+      );
+      setDropoffSuggestions(filtered);
+    } else {
+      setDropoffSuggestions([]);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    // Handle search functionality
-    console.log("Search submitted");
+    
+    // Create booking details
+    const details = {
+      carType,
+      pickupLocation,
+      dropoffLocation,
+      pickupDate,
+      pickupTime,
+      dropoffDate,
+      dropoffTime,
+      totalDays: calculateTotalDays(),
+      estimatedPrice: calculateEstimatedPrice()
+    };
+
+    setBookingDetails(details);
+    setShowBookingModal(true);
+  };
+
+  const calculateTotalDays = () => {
+    if (!pickupDate || !dropoffDate) return 0;
+    const start = new Date(pickupDate);
+    const end = new Date(dropoffDate);
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const calculateEstimatedPrice = () => {
+    const days = calculateTotalDays();
+    const selectedCarData = cars.find(car => `${car.brand} ${car.model}` === carType);
+    return days * (selectedCarData?.pricePerDay || 0);
+  };
+
+  const handleConfirmBooking = () => {
+    if (!isAuthenticated) {
+      setShowBookingModal(false);
+      navigate('/signup');
+    } else {
+      // Handle actual booking logic here
+      console.log("Booking confirmed:", bookingDetails);
+      setShowBookingModal(false);
+    }
   };
 
   const handleRentCar = () => {
@@ -60,7 +167,7 @@ const Home = () => {
     }
   };
 
-  return (
+    return (
     <div className="w-full">
       {/* Hero Section */}
       <div id="home" className="relative flex flex-col md:flex-row justify-between items-center py-16 px-8">
@@ -96,35 +203,88 @@ const Home = () => {
         <h2 className="text-3xl font-bold text-center mb-8 tracking-tight">Book Here</h2>
         <form onSubmit={handleSearch} className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-semibold mb-1 text-gray-700">Select Car Type</label>
               <input
                 type="text"
-                placeholder="Renault"
-                className="w-full p-3 border rounded"
+                placeholder="Select a car"
+                className="w-full p-3 border rounded cursor-pointer"
                 value={carType}
-                onChange={(e) => setCarType(e.target.value)}
+                onClick={() => setShowCarDropdown(true)}
+                readOnly
               />
+              {showCarDropdown && (
+                <div className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto">
+                  {cars.map((car) => (
+                    <div
+                      key={car._id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setCarType(`${car.brand} ${car.model}`);
+                        setShowCarDropdown(false);
+                      }}
+                    >
+                      {car.brand} {car.model}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
+
+            <div className="relative">
               <label className="block text-sm font-semibold mb-1 text-gray-700">Pick-up Location</label>
               <input
                 type="text"
-                placeholder="Durban - Pinetown Centre"
-                className="w-full p-3 border rounded"
+                placeholder="Select pickup location"
+                className="w-full p-3 border rounded cursor-pointer"
                 value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
+                onClick={() => setShowPickupDropdown(true)}
+                readOnly
               />
+              {showPickupDropdown && (
+                <div className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto">
+                  {locations.map((location, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setPickupLocation(location);
+                        setShowPickupDropdown(false);
+                      }}
+                    >
+                      {location}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
+
+            <div className="relative">
               <label className="block text-sm font-semibold mb-1 text-gray-700">Drop-off Location</label>
               <input
                 type="text"
-                placeholder="85 Curry's Post"
-                className="w-full p-3 border rounded"
+                placeholder="Select drop-off location"
+                className="w-full p-3 border rounded cursor-pointer"
                 value={dropoffLocation}
-                onChange={(e) => setDropoffLocation(e.target.value)}
+                onClick={() => setShowDropoffDropdown(true)}
+                readOnly
               />
+              {showDropoffDropdown && (
+                <div className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto">
+                  {locations.map((location, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setDropoffLocation(location);
+                        setShowDropoffDropdown(false);
+                      }}
+                    >
+                      {location}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
@@ -173,6 +333,59 @@ const Home = () => {
           </div>
         </form>
       </div>
+
+      {/* Booking Confirmation Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold mb-4">Booking Summary</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="font-medium">Car Type:</p>
+                <p>{bookingDetails.carType}</p>
+              </div>
+              <div>
+                <p className="font-medium">Pick-up Location:</p>
+                <p>{bookingDetails.pickupLocation}</p>
+              </div>
+              <div>
+                <p className="font-medium">Drop-off Location:</p>
+                <p>{bookingDetails.dropoffLocation}</p>
+              </div>
+              <div>
+                <p className="font-medium">Pick-up Date & Time:</p>
+                <p>{bookingDetails.pickupDate} at {bookingDetails.pickupTime}</p>
+              </div>
+              <div>
+                <p className="font-medium">Drop-off Date & Time:</p>
+                <p>{bookingDetails.dropoffDate} at {bookingDetails.dropoffTime}</p>
+              </div>
+              <div>
+                <p className="font-medium">Total Days:</p>
+                <p>{bookingDetails.totalDays} days</p>
+              </div>
+              <div>
+                <p className="font-medium">Estimated Price:</p>
+                <p className="text-[#EB5A3C] font-bold">R {bookingDetails.estimatedPrice.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-4">
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="px-4 py-2 border rounded hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBooking}
+                className="px-4 py-2 bg-[#EB5A3C] text-white rounded hover:bg-[#d44a2e] transition"
+              >
+                {isAuthenticated ? "Confirm Booking" : "Sign Up to Book"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Models Section */}
       <div id="cars" className="py-12 px-4 bg-gray-50">
@@ -281,7 +494,7 @@ const Home = () => {
         <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">How it works</h2>
         
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Step 1 */}
+          
           <div className="text-center">
             <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
@@ -298,7 +511,7 @@ const Home = () => {
             <p className="text-gray-600">Select your desired car <br /> for rental from our <br /> rental fleet.</p>
           </div>
           
-          {/* Step 2 */}
+          
           <div className="text-center">
             <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
@@ -315,7 +528,6 @@ const Home = () => {
             <p className="text-gray-600">You will receive a <br /> confirmation email <br /> about your  rental details.</p>
           </div>
           
-          {/* Step 3 */}
           <div className="text-center">
             <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
@@ -335,29 +547,39 @@ const Home = () => {
       </div>
 
       {/* About Us Section */}
-      <div id="about" className="py-12 px-4 bg-gray-50">
-        <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">About Us</h2>
-        
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <div>
-            {/* About Us Image Placeholder */}
-            <div className="w-full h-80 bg-gray-200 rounded">
-              <img
-                src="/images/about-us.png"
-                alt="Car rental"
-                className="w-full h-full object-cover rounded"
-                onError={(e) => {
-                  e.target.src = "https://via.placeholder.com/600x400?text=About+Us+Image";
-                  e.target.onerror = null;
-                }}
-              />
-            </div>
-          </div>
-        </div>
+      <div className="py-12 px-4 bg-gray-50">
+         <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">About Us</h2>
+         
+         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+           <div>
+             {/* About Us Image Placeholder */}
+             <div className="w-full h-80 bg-gray-200 rounded">
+               <img
+                 src="/images/about-us.png"
+                 alt="Car rental"
+                 className="w-full h-full object-cover rounded"
+                 onError={(e) => {
+                   e.target.src = "https://via.placeholder.com/600x400?text=About+Us+Image";
+                   e.target.onerror = null;
+                 }}
+               />
+             </div>
+           </div>
+           
+           <div>
+             <h3 className="text-2xl font-bold mb-4">Your Journey, Our Priority - Rent with Confidence!</h3>
+             <p className="text-gray-700 mb-4 font-medium">
+               At Pinetown Rentals, we're passionate <br/> about making car rentals simple, <br /> affordable and hassle-free.
+             </p>
+             <Link to="/about" className="text-orange-500 font-semibold hover:underline">
+               Learn more about us
+             </Link>
+           </div>
+         </div>
+       </div>
       </div>
-    </div>
-  );
-};
-
-export default Home;
+    );
+  };
+  
+  export default Home;
   

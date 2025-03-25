@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [carType, setCarType] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
@@ -45,17 +48,32 @@ const Home = () => {
     console.log("Search submitted");
   };
 
+  const handleRentCar = () => {
+    if (!isAuthenticated) {
+      navigate('/signup');
+    } else {
+      // If authenticated, scroll to cars section
+      const carsSection = document.getElementById('cars');
+      if (carsSection) {
+        carsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <div className="relative flex flex-col md:flex-row justify-between items-center py-16 px-8 bg-gray-50">
+      <div id="home" className="relative flex flex-col md:flex-row justify-between items-center py-16 px-8">
         <div className="w-full md:w-1/2 mb-8 md:mb-0">
           <p className="text-lg font-medium text-gray-700">Plan your trip now</p>
           <h1 className="text-4xl md:text-5xl font-extrabold mt-2 mb-4 tracking-tight">Rent The Perfect Car</h1>
-          <h2 className="text-2xl md:text-3xl font-bold mb-8">From <span className="text-orange-500 font-extrabold">ONLY R 500.00!</span></h2>
-          <Link to="/cars" className="bg-orange-500 text-white px-7 py-3 rounded font-medium text-lg inline-block hover:bg-orange-600 transition">
-            Rent Car
-          </Link>
+          <h2 className="text-2xl md:text-3xl font-bold mb-8">From <span className="text-[#EB5A3C] font-extrabold">ONLY R 500.00!</span></h2>
+          <button 
+            onClick={handleRentCar}
+            className="bg-[#EB5A3C] text-white px-7 py-3 rounded font-medium text-lg inline-block hover:bg-[#d44a2e] transition"
+          >
+            {isAuthenticated ? "Rent Car" : "Rent Now"}
+          </button>
         </div>
         <div className="w-full md:w-1/2 flex justify-center">
           {/* Hero image */}
@@ -147,7 +165,7 @@ const Home = () => {
             <div className="lg:col-span-5 flex justify-end mt-4">
               <button
                 type="submit"
-                className="bg-orange-500 text-white px-10 py-3 rounded font-medium text-lg hover:bg-orange-600 transition"
+                className="bg-[#EB5A3C] text-white px-10 py-3 rounded font-medium text-lg hover:bg-[#d44a2e] transition"
               >
                 Search
               </button>
@@ -157,7 +175,7 @@ const Home = () => {
       </div>
 
       {/* Models Section */}
-      <div className="py-12 px-4 bg-gray-50">
+      <div id="cars" className="py-12 px-4 bg-gray-50">
         <h2 className="text-3xl font-bold text-center mb-2 tracking-tight">Models</h2>
         <p className="text-xl text-center mb-8 font-extrabold text-gray-700">Our available rental fleet</p>
         
@@ -183,7 +201,7 @@ const Home = () => {
                   onClick={() => setSelectedCar(car)}
                   className={`px-6 py-3 rounded font-medium ${
                     selectedCar && selectedCar._id === car._id
-                      ? "bg-orange-500 text-white" 
+                      ? "bg-[#EB5A3C] text-white" 
                       : "bg-white text-black border"
                   }`}
                 >
@@ -230,6 +248,10 @@ const Home = () => {
                       <span className="font-medium">{selectedCar.year}</span>
                     </p>
                     <p className="flex justify-between">
+                      <span className="font-medium">Transmission:</span>
+                      <span className="font-medium">{selectedCar.transmission || "Manual"}</span>
+                    </p>
+                    <p className="flex justify-between">
                       <span className="font-medium">Availability:</span>
                       <span className={selectedCar.available ? "text-green-600" : "text-red-600"}>
                         {selectedCar.available ? "Available" : "Unavailable"}
@@ -240,7 +262,7 @@ const Home = () => {
                   <button 
                     className={`py-3 px-6 rounded font-medium text-lg ${
                       selectedCar.available 
-                        ? "bg-orange-500 text-white hover:bg-orange-600" 
+                        ? "bg-[#EB5A3C] text-white hover:bg-[#d44a2e]" 
                         : "bg-gray-300 text-gray-600 cursor-not-allowed"
                     } transition`}
                     disabled={!selectedCar.available}
@@ -255,13 +277,13 @@ const Home = () => {
       </div>
 
       {/* How It Works Section */}
-      <div className="py-12 px-4 bg-white">
+      <div id="how-it-works" className="py-12 px-4 bg-white">
         <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">How it works</h2>
         
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Step 1 */}
           <div className="text-center">
-            <div className="w-24 h-24 mx-auto bg-orange-100 rounded-md flex items-center justify-center mb-4">
+            <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
                 src="/images/car-icon-1.png"
                 alt="Select Car"
@@ -273,12 +295,12 @@ const Home = () => {
               />
             </div>
             <h3 className="text-xl font-bold mb-2">Select Car</h3>
-            <p className="text-gray-600">Select your desired car for rental from our rental fleet</p>
+            <p className="text-gray-600">Select your desired car <br /> for rental from our <br /> rental fleet.</p>
           </div>
           
           {/* Step 2 */}
           <div className="text-center">
-            <div className="w-24 h-24 mx-auto bg-orange-100 rounded-md flex items-center justify-center mb-4">
+            <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
                 src="/images/email.png"
                 alt="Confirmation Email"
@@ -290,12 +312,12 @@ const Home = () => {
               />
             </div>
             <h3 className="text-xl font-bold mb-2">Confirmation Email</h3>
-            <p className="text-gray-600">You will receive a confirmation email about your rental details</p>
+            <p className="text-gray-600">You will receive a <br /> confirmation email <br /> about your  rental details.</p>
           </div>
           
           {/* Step 3 */}
           <div className="text-center">
-            <div className="w-24 h-24 mx-auto bg-orange-100 rounded-md flex items-center justify-center mb-4">
+            <div className="w-24 h-24 mx-auto bg-[#EB5A3C]/10 rounded-md flex items-center justify-center mb-4">
               <img
                 src="/images/car-key.png"
                 alt="Get Driving"
@@ -307,13 +329,13 @@ const Home = () => {
               />
             </div>
             <h3 className="text-xl font-bold mb-2">Get Driving</h3>
-            <p className="text-gray-600">After payments and collections, you are ready to</p>
+            <p className="text-gray-600">After payments and <br /> collections, you are ready to <br /> drive away.</p>
           </div>
         </div>
       </div>
 
       {/* About Us Section */}
-      <div className="py-12 px-4 bg-gray-50">
+      <div id="about" className="py-12 px-4 bg-gray-50">
         <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">About Us</h2>
         
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -330,16 +352,6 @@ const Home = () => {
                 }}
               />
             </div>
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-bold mb-4">Your Journey, Our Priority - Rent with Confidence!</h3>
-            <p className="text-gray-700 mb-4 font-medium">
-              At Pinetown Rentals, we're passionate <br/> about making car rentals simple, <br /> affordable and hassle-free.
-            </p>
-            <Link to="/about" className="text-orange-500 font-semibold hover:underline">
-              Learn more about us
-            </Link>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import React from 'react';
 
 const CarModelsSection = ({ cars, selectedCar, setSelectedCar, loading, error }) => {
   return (
-    <div id="cars" className="py-12 px-4 bg-gray-50">
+    <div id="models" className="py-12 px-4 bg-gray-50">
       <h2 className="text-3xl font-bold text-center mb-2 tracking-tight">Models</h2>
       <p className="text-xl text-center mb-8 font-extrabold text-gray-700">Our available rental fleet</p>
       

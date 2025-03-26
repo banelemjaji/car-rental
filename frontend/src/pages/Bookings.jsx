@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "../components/Toast";
+import { getErrorMessage, logError } from "../utils/apiErrorHandler";
 
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [bookingId, setBookingId] = useState(null);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -16,28 +22,55 @@ const Bookings = () => {
       return;
     }
 
+    // Check for success message from state
+    if (location.state?.bookingSuccess) {
+      setShowSuccessMessage(true);
+      setBookingId(location.state.bookingId);
+      
+      // Show toast notification
+      addToast("Your booking has been successfully created!", "success");
+      
+      // Remove the state from history to prevent showing message on refresh
+      window.history.replaceState({}, document.title);
+      
+      // Auto-hide the message after 5 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, navigate, location.state, addToast]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchBookings = async () => {
       try {
         const response = await axios.get("/api/bookings/my");
         setBookings(response.data?.data || []);
         setLoading(false);
-      } catch (err) {
-        console.error("Error fetching bookings:", err);
-        setError(err.message || "Failed to fetch bookings");
+      } catch (error) {
+        logError(error, "fetchBookings");
+        const errorMessage = getErrorMessage(error);
+        setError(errorMessage);
+        addToast(errorMessage, "error");
         setLoading(false);
       }
     };
 
     fetchBookings();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, addToast]);
 
   const handleCancelBooking = async (bookingId) => {
     try {
       await axios.delete(`/api/bookings/${bookingId}`);
       setBookings(bookings.filter(booking => booking._id !== bookingId));
-    } catch (err) {
-      console.error("Error cancelling booking:", err);
-      setError(err.message || "Failed to cancel booking");
+      addToast("Booking cancelled successfully", "success");
+    } catch (error) {
+      logError(error, "cancelBooking");
+      const errorMessage = getErrorMessage(error);
+      addToast(errorMessage, "error");
     }
   };
 
@@ -57,6 +90,27 @@ const Bookings = () => {
           <p className="mt-4 text-lg text-gray-600">View and manage your car rental bookings.</p>
         </div>
 
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="mb-8 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+              </svg>
+              <span className="font-medium">Booking confirmed!</span>
+              <span className="ml-2">Your booking has been successfully created.</span>
+            </div>
+            <button 
+              onClick={() => setShowSuccessMessage(false)}
+              className="absolute top-0 right-0 p-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EB5A3C] mx-auto"></div>
@@ -66,6 +120,12 @@ const Bookings = () => {
           <div className="text-center py-10">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         ) : bookings.length === 0 ? (
@@ -81,7 +141,7 @@ const Bookings = () => {
         ) : (
           <div className="space-y-6">
             {bookings.map((booking) => (
-              <div key={booking._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div key={booking._id} className={`bg-white rounded-lg shadow-md overflow-hidden ${bookingId === booking._id ? 'ring-2 ring-green-500' : ''}`}>
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
@@ -94,6 +154,12 @@ const Bookings = () => {
                         </p>
                         <p className="text-gray-600">
                           <span className="font-medium">End Date:</span> {formatDate(booking.endDate)}
+                        </p>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Pickup Location:</span> {booking.pickupLocation}
+                        </p>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Dropoff Location:</span> {booking.dropoffLocation}
                         </p>
                         <p className="text-gray-600">
                           <span className="font-medium">Total Price:</span> R{booking.totalPrice.toFixed(2)}

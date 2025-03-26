@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/Toast";
+import { getErrorMessage, logError } from "../utils/apiErrorHandler";
 
 const Cars = () => {
   const [cars, setCars] = useState([]);
@@ -11,6 +13,19 @@ const Cars = () => {
   const [showRentModal, setShowRentModal] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  // Booking form state
+  const [pickupDate, setPickupDate] = useState("");
+  const [dropoffDate, setDropoffDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("10:00");
+  const [dropoffTime, setDropoffTime] = useState("10:00");
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [dropoffLocation, setDropoffLocation] = useState("");
+  const [formErrors, setFormErrors] = useState({});
+  const [totalDays, setTotalDays] = useState(1);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [locations, setLocations] = useState([]);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -18,33 +33,121 @@ const Cars = () => {
         const response = await axios.get("/api/cars");
         setCars(response.data?.data || []);
         setLoading(false);
-      } catch (err) {
-        console.error("Error fetching cars:", err);
-        setError(err.message || "Failed to fetch cars");
+      } catch (error) {
+        logError(error, "fetchCars");
+        const errorMessage = getErrorMessage(error);
+        setError(errorMessage);
+        addToast(errorMessage, "error");
         setLoading(false);
       }
     };
 
+    const fetchLocations = async () => {
+      try {
+        const response = await axios.get("/api/locations");
+        setLocations(response.data?.data || [
+          { _id: "1", name: "Airport" },
+          { _id: "2", name: "City Center" },
+          { _id: "3", name: "North Suburb" },
+          { _id: "4", name: "South Suburb" }
+        ]);
+      } catch (err) {
+        console.error("Error fetching locations:", err);
+        // Use fallback locations if API fails
+        setLocations([
+          { _id: "1", name: "Airport" },
+          { _id: "2", name: "City Center" },
+          { _id: "3", name: "North Suburb" },
+          { _id: "4", name: "South Suburb" }
+        ]);
+      }
+    };
+
     fetchCars();
-  }, []);
+    fetchLocations();
+  }, [addToast]);
+
+  // Calculate total days and price when dates change
+  useEffect(() => {
+    if (pickupDate && dropoffDate && selectedCar) {
+      const start = new Date(pickupDate);
+      const end = new Date(dropoffDate);
+      
+      // Calculate the difference in days
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Ensure at least 1 day
+      const days = Math.max(1, diffDays);
+      setTotalDays(days);
+      
+      // Calculate total price
+      setTotalPrice(days * selectedCar.pricePerDay);
+    }
+  }, [pickupDate, dropoffDate, selectedCar]);
 
   const handleRentClick = (car) => {
     if (!isAuthenticated) {
-      navigate('/signup');
+      addToast("Please log in to rent a car", "info");
+      navigate('/login', { state: { returnUrl: '/cars' } });
     } else {
-      setSelectedCar(car);
-      setShowRentModal(true);
+      // Navigate to the BookCar page with car data
+      navigate('/book-car', { state: { car } });
     }
   };
 
   const handleCloseModal = () => {
     setShowRentModal(false);
     setSelectedCar(null);
+    setFormErrors({});
   };
 
-  const handleConfirmRent = () => {
-    if (selectedCar) {
-      navigate('/book', { state: { car: selectedCar } });
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!pickupDate) errors.pickupDate = "Pickup date is required";
+    if (!dropoffDate) errors.dropoffDate = "Drop-off date is required";
+    if (!pickupLocation) errors.pickupLocation = "Pickup location is required";
+    if (!dropoffLocation) errors.dropoffLocation = "Drop-off location is required";
+    
+    // Check if drop-off date is before pickup date
+    if (pickupDate && dropoffDate && new Date(dropoffDate) < new Date(pickupDate)) {
+      errors.dropoffDate = "Drop-off date cannot be before pickup date";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleConfirmRent = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      const bookingData = {
+        carId: selectedCar._id,
+        startDate: `${pickupDate}T${pickupTime}:00`,
+        endDate: `${dropoffDate}T${dropoffTime}:00`,
+        pickupLocation,
+        dropoffLocation,
+        totalPrice
+      };
+      
+      const response = await axios.post("/api/bookings", bookingData);
+      
+      // Close modal and show success message
+      handleCloseModal();
+      
+      // Redirect to bookings page
+      navigate('/bookings', { state: { 
+        bookingSuccess: true,
+        bookingId: response.data?.data?._id 
+      }});
+      
+    } catch (err) {
+      console.error("Error creating booking:", err);
+      setFormErrors({
+        submit: err.response?.data?.message || "Failed to create booking. Please try again."
+      });
     }
   };
 
@@ -65,6 +168,12 @@ const Cars = () => {
           <div className="text-center py-10">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         ) : (
@@ -161,12 +270,12 @@ const Cars = () => {
         {/* Rent Modal */}
         {showRentModal && selectedCar && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
-              <div className="relative">
+            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden">
+              <div className="relative h-64 overflow-hidden bg-gray-100">
                 <img
                   src={selectedCar.image}
                   alt={`${selectedCar.brand} ${selectedCar.model}`}
-                  className="w-full h-64 object-contain bg-gray-100 p-4"
+                  className="w-full h-full object-contain p-4"
                 />
                 <button
                   onClick={handleCloseModal}
@@ -176,57 +285,168 @@ const Cars = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                  <h2 className="text-2xl font-bold text-white">
+                    {selectedCar.brand} {selectedCar.model} ({selectedCar.year})
+                  </h2>
+                  <p className="text-white opacity-90">R{selectedCar.pricePerDay.toFixed(2)} per day</p>
+                </div>
               </div>
               
               <div className="p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  {selectedCar.brand} {selectedCar.model}
-                </h2>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Complete Your Booking</h3>
                 
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Brand:</span>
-                    <span className="font-medium">{selectedCar.brand}</span>
+                {formErrors.submit && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                    {formErrors.submit}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Model:</span>
-                    <span className="font-medium">{selectedCar.model}</span>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Booking dates */}
+                  <div>
+                    <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      Pickup Date*
+                    </label>
+                    <input
+                      type="date"
+                      id="pickupDate"
+                      value={pickupDate}
+                      onChange={(e) => setPickupDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C] ${
+                        formErrors.pickupDate ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      required
+                    />
+                    {formErrors.pickupDate && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.pickupDate}</p>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Year:</span>
-                    <span className="font-medium">{selectedCar.year}</span>
+                  
+                  <div>
+                    <label htmlFor="dropoffDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      Drop-off Date*
+                    </label>
+                    <input
+                      type="date"
+                      id="dropoffDate"
+                      value={dropoffDate}
+                      onChange={(e) => setDropoffDate(e.target.value)}
+                      min={pickupDate || new Date().toISOString().split('T')[0]}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C] ${
+                        formErrors.dropoffDate ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      required
+                    />
+                    {formErrors.dropoffDate && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.dropoffDate}</p>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Transmission:</span>
-                    <span className="font-medium">{selectedCar.transmission}</span>
+                  
+                  {/* Booking times */}
+                  <div>
+                    <label htmlFor="pickupTime" className="block text-sm font-medium text-gray-700 mb-1">
+                      Pickup Time
+                    </label>
+                    <input
+                      type="time"
+                      id="pickupTime"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C]"
+                    />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Seats:</span>
-                    <span className="font-medium">{selectedCar.seats || "5"}</span>
+                  
+                  <div>
+                    <label htmlFor="dropoffTime" className="block text-sm font-medium text-gray-700 mb-1">
+                      Drop-off Time
+                    </label>
+                    <input
+                      type="time"
+                      id="dropoffTime"
+                      value={dropoffTime}
+                      onChange={(e) => setDropoffTime(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C]"
+                    />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Doors:</span>
-                    <span className="font-medium">{selectedCar.doors || "4"}</span>
+                  
+                  {/* Locations */}
+                  <div>
+                    <label htmlFor="pickupLocation" className="block text-sm font-medium text-gray-700 mb-1">
+                      Pickup Location*
+                    </label>
+                    <select
+                      id="pickupLocation"
+                      value={pickupLocation}
+                      onChange={(e) => setPickupLocation(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C] ${
+                        formErrors.pickupLocation ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      required
+                    >
+                      <option value="">Select pickup location</option>
+                      {locations.map(location => (
+                        <option key={location._id} value={location.name}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.pickupLocation && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.pickupLocation}</p>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Luggage Capacity:</span>
-                    <span className="font-medium">{selectedCar.luggageCapacity || "3"} bags</span>
+                  
+                  <div>
+                    <label htmlFor="dropoffLocation" className="block text-sm font-medium text-gray-700 mb-1">
+                      Drop-off Location*
+                    </label>
+                    <select
+                      id="dropoffLocation"
+                      value={dropoffLocation}
+                      onChange={(e) => setDropoffLocation(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-[#EB5A3C] focus:border-[#EB5A3C] ${
+                        formErrors.dropoffLocation ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      required
+                    >
+                      <option value="">Select drop-off location</option>
+                      {locations.map(location => (
+                        <option key={location._id} value={location.name}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.dropoffLocation && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.dropoffLocation}</p>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Price per Day:</span>
-                    <span className="font-medium text-[#EB5A3C]">R{selectedCar.pricePerDay}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Availability:</span>
-                    <span className={`font-medium ${
-                      selectedCar.available ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {selectedCar.available ? "Available" : "Unavailable"}
-                    </span>
+                </div>
+                
+                {/* Booking summary and price */}
+                <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Booking Summary</h4>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span>Car:</span>
+                      <span className="font-medium">{selectedCar.brand} {selectedCar.model}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Price per day:</span>
+                      <span className="font-medium">R{selectedCar.pricePerDay.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total days:</span>
+                      <span className="font-medium">{totalDays}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold text-[#EB5A3C]">
+                      <span>Total price:</span>
+                      <span>R{totalPrice.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-4">
+                <div className="flex justify-end space-x-4 mt-8">
                   <button
                     onClick={handleCloseModal}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
@@ -237,7 +457,7 @@ const Cars = () => {
                     onClick={handleConfirmRent}
                     className="px-6 py-2 bg-[#EB5A3C] text-white rounded-lg hover:bg-[#d44a2e] transition-colors"
                   >
-                    Proceed to Booking
+                    Confirm Booking
                   </button>
                 </div>
               </div>

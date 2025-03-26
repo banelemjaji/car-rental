@@ -8,6 +8,11 @@
   body {
     @apply font-sans;
   }
+
+  /* Remove default underline from all links */
+  a {
+    text-decoration: none;
+  }
 }
 
 /* Custom cursor styles */
@@ -32,10 +37,10 @@ input[type="button"] {
   transition: all 0.2s ease-in-out;
 }
 
-/* Add a subtle underline effect for links */
-a:not(button a):hover {
+/* Remove hover underline effect */
+/* a:not(button a):hover {
   text-decoration: underline;
-}
+} */
 
 /* Custom cursor for text inputs */
 input[type="text"],

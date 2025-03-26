@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const SignUp = () => {
   const [name, setName] = useState("");
@@ -11,6 +12,18 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  
+  // Get returnUrl from location state if available
+  const returnUrl = location.state?.returnUrl || "/cars";
+  
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(returnUrl);
+    }
+  }, [isAuthenticated, navigate, returnUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,7 +55,8 @@ const SignUp = () => {
       
       setSuccess(true);
       setTimeout(() => {
-        navigate("/login");
+        // Pass returnUrl to login page after successful registration
+        navigate("/login", { state: { returnUrl } });
       }, 2000);
       
     } catch (err) {

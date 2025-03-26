@@ -1,14 +1,16 @@
 const Footer = () => {
-    return (
-      <footer className="bg-gray-800 text-white text-center p-4 mt-8">
-        <p>© 2025 Pinetown Car Rental. All Rights Reserved.</p>
-        <div className="flex justify-center space-x-4 mt-2">
-          <a href="#" className="hover:text-gray-400">LinkedIn</a>
-          <a href="#" className="hover:text-gray-400">Instagram</a>
+  return (
+    <footer className="border-t border-gray-200 py-4">
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <p className="text-sm text-gray-600">© 2025 Pinetown Car Rental. All Rights Reserved</p>
+        <div className="flex space-x-6">
+          <a href="#" className="text-sm text-gray-600 hover:text-gray-900">LinkedIn</a>
+          <a href="#" className="text-sm text-gray-600 hover:text-gray-900">Instagram</a>
         </div>
-      </footer>
-    );
-  };
-  
-  export default Footer;
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
   

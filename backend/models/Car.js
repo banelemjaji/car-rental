@@ -8,6 +8,10 @@ const carSchema = new mongoose.Schema(
     pricePerDay: { type: Number, required: true },
     available: { type: Boolean, default: true },
     image: { type: String, default: "default-car.jpg" }, // Car image URL
+    transmission: { type: String, enum: ["Manual", "Automatic"], required: true },
+    seats: { type: Number, default: 5 },
+    doors: { type: Number, default: 4 },
+    luggageCapacity: { type: Number, default: 3 }, // Number of bags
   },
   { timestamps: true }
 );

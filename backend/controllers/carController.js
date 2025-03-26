@@ -37,10 +37,21 @@ export const addCar = async (req, res) => {
       return res.status(403).json({ message: "Access denied: Admins only" });
     }
 
-    const { brand, model, year, pricePerDay, available, image } = req.body;
+    const { 
+      brand, 
+      model, 
+      year, 
+      pricePerDay, 
+      available, 
+      image, 
+      transmission, 
+      seats,
+      doors,
+      luggageCapacity 
+    } = req.body;
 
     // Validate required fields
-    if (!brand || !model || !year || !pricePerDay) {
+    if (!brand || !model || !year || !pricePerDay || !transmission) {
       return res.status(400).json({ message: "Please provide all required fields" });
     }
 
@@ -50,7 +61,18 @@ export const addCar = async (req, res) => {
       return res.status(400).json({ message: "Car already exists" });
     }
 
-    const car = new Car({ brand, model, year, pricePerDay, available, image });
+    const car = new Car({ 
+      brand, 
+      model, 
+      year, 
+      pricePerDay, 
+      available, 
+      image, 
+      transmission, 
+      seats,
+      doors,
+      luggageCapacity 
+    });
     await car.save();
 
     res.status(201).json({ success: true, message: "Car added successfully", data: car });

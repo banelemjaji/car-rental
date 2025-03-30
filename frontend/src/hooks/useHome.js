@@ -29,13 +29,7 @@ export const useHome = () => {
   // Location suggestions
   const locations = [
     "Durban - Pinetown Centre",
-    "Durban - Gateway Mall",
-    "Durban - Musgrave Centre",
-    "Durban - Pavilion Mall",
     "Durban - Umhlanga Rocks",
-    "Durban - Westville Mall",
-    "Durban - Chatsworth Centre",
-    "Durban - Phoenix Plaza"
   ];
 
   // Dropdown visibility states

@@ -1,4 +1,20 @@
 import Car from "../models/Car.js";
+import cloudinary from "../config/cloudinary.js";
+import dotenv from "dotenv";
+dotenv.config();
+
+// Function to upload image to Cloudinary
+const uploadImageToCloudinary = async (filePath) => {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "car_rental", // Optional folder in Cloudinary
+    });
+    return { url: result.secure_url, public_id: result.public_id };
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    throw error;
+  }
+};
 
 // @desc    Get all cars
 // @route   GET /api/cars
@@ -37,17 +53,16 @@ export const addCar = async (req, res) => {
       return res.status(403).json({ message: "Access denied: Admins only" });
     }
 
-    const { 
-      brand, 
-      model, 
-      year, 
-      pricePerDay, 
-      available, 
-      image, 
-      transmission, 
+    const {
+      brand,
+      model,
+      year,
+      pricePerDay,
+      available,
+      transmission,
       seats,
       doors,
-      luggageCapacity 
+      luggageCapacity,
     } = req.body;
 
     // Validate required fields
@@ -61,18 +76,25 @@ export const addCar = async (req, res) => {
       return res.status(400).json({ message: "Car already exists" });
     }
 
-    const car = new Car({ 
-      brand, 
-      model, 
-      year, 
-      pricePerDay, 
-      available, 
-      image, 
-      transmission, 
+    if (!req.file) {
+      return res.status(400).json({ message: "Please upload an image." });
+    }
+
+    const uploadedImage = await uploadImageToCloudinary(req.file.path);
+
+    const car = new Car({
+      brand,
+      model,
+      year,
+      pricePerDay,
+      available,
+      image: uploadedImage.url,
+      transmission,
       seats,
       doors,
-      luggageCapacity 
+      luggageCapacity,
     });
+
     await car.save();
 
     res.status(201).json({ success: true, message: "Car added successfully", data: car });
@@ -94,7 +116,37 @@ export const updateCar = async (req, res) => {
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    Object.assign(car, req.body);
+    const {
+      brand,
+      model,
+      year,
+      pricePerDay,
+      available,
+      transmission,
+      seats,
+      doors,
+      luggageCapacity,
+    } = req.body;
+
+    car.brand = brand || car.brand;
+    car.model = model || car.model;
+    car.year = year || car.year;
+    car.pricePerDay = pricePerDay || car.pricePerDay;
+    car.available = available || car.available;
+    car.transmission = transmission || car.transmission;
+    car.seats = seats || car.seats;
+    car.doors = doors || car.doors;
+    car.luggageCapacity = luggageCapacity || car.luggageCapacity;
+
+    if (req.file) {
+      try {
+        const uploadedImage = await uploadImageToCloudinary(req.file.path);
+        car.image = uploadedImage.url;
+      } catch (error) {
+        return res.status(500).json({ message: "Failed to update image." });
+      }
+    }
+
     await car.save();
 
     res.status(200).json({ success: true, message: "Car updated successfully", data: car });
@@ -115,6 +167,13 @@ export const deleteCar = async (req, res) => {
 
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
+    try {
+      // Extract public_id from Cloudinary URL and delete the image
+      const publicId = car.image.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(`car_rental/${publicId}`);
+    } catch (error) {
+      console.error("Error deleting from Cloudinary:", error);
+    }
 
     await car.deleteOne();
     res.status(200).json({ success: true, message: "Car deleted successfully" });

@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "../components/Toast";
-import { getErrorMessage, logError } from "../utils/apiErrorHandler";
 
 const Cars = () => {
   const [cars, setCars] = useState([]);
@@ -13,7 +11,6 @@ const Cars = () => {
   const [showRentModal, setShowRentModal] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { addToast } = useToast();
 
   // Booking form state
   const [pickupDate, setPickupDate] = useState("");
@@ -33,11 +30,9 @@ const Cars = () => {
         const response = await axios.get("/api/cars");
         setCars(response.data?.data || []);
         setLoading(false);
-      } catch (error) {
-        logError(error, "fetchCars");
-        const errorMessage = getErrorMessage(error);
-        setError(errorMessage);
-        addToast(errorMessage, "error");
+      } catch (err) {
+        console.error("Error fetching cars:", err);
+        setError(err.message || "Failed to fetch cars");
         setLoading(false);
       }
     };
@@ -65,7 +60,7 @@ const Cars = () => {
 
     fetchCars();
     fetchLocations();
-  }, [addToast]);
+  }, []);
 
   // Calculate total days and price when dates change
   useEffect(() => {
@@ -88,7 +83,6 @@ const Cars = () => {
 
   const handleRentClick = (car) => {
     if (!isAuthenticated) {
-      addToast("Please log in to rent a car", "info");
       navigate('/login', { state: { returnUrl: '/cars' } });
     } else {
       // Navigate to the BookCar page with car data
@@ -168,12 +162,6 @@ const Cars = () => {
           <div className="text-center py-10">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-red-600">{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Try Again
-              </button>
             </div>
           </div>
         ) : (

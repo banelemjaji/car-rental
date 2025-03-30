@@ -27,7 +27,7 @@ const AboutUsSection = () => {
           <p className="text-gray-700 mb-4 font-medium">
             At Pinetown Rentals, we're passionate <br/> about making car rentals simple, <br /> affordable and hassle-free.
           </p>
-          <Link to="/about" className="text-orange-500 font-semibold hover:underline">
+          <Link to="/" className="text-orange-500 font-semibold hover:underline">
             Learn more about us
           </Link>
         </div>

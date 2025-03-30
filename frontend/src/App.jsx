@@ -12,8 +12,6 @@ import Bookings from "./pages/Bookings.jsx";
 import BookCar from "./pages/BookCar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
-import { ToastProvider } from "./components/Toast.jsx";
-import { getErrorMessage, logError } from "./utils/apiErrorHandler.js";
 
 // Axios response interceptor setup component
 const AxiosInterceptor = () => {
@@ -44,9 +42,6 @@ const AxiosInterceptor = () => {
           }
         }
         
-        // Log all errors for debugging
-        logError(error, 'axios-interceptor');
-        
         return Promise.reject(error);
       }
     );
@@ -63,47 +58,45 @@ const AxiosInterceptor = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <Layout>
-            <AxiosInterceptor />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Protected routes for authenticated users */}
-              <Route 
-                path="/cars" 
-                element={
-                  <Cars />
-                } 
-              />
-              <Route 
-                path="/book-car" 
-                element={
-                  <ProtectedRoute>
-                    <BookCar />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/bookings" 
-                element={
-                  <ProtectedRoute>
-                    <Bookings />
-                  </ProtectedRoute>
-                } 
-              />
+      <Router>
+        <Layout>
+          <AxiosInterceptor />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            
+            {/* Protected routes for authenticated users */}
+            <Route 
+              path="/cars" 
+              element={
+                <Cars />
+              } 
+            />
+            <Route 
+              path="/book-car" 
+              element={
+                <ProtectedRoute>
+                  <BookCar />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/bookings" 
+              element={
+                <ProtectedRoute>
+                  <Bookings />
+                </ProtectedRoute>
+              } 
+            />
 
-              {/* Legacy routes that will likely be accessed via home page scrolling */}
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </ToastProvider>
+            {/* Legacy routes that will likely be accessed via home page scrolling */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+        </Layout>
+      </Router>
     </AuthProvider>
   );
 };

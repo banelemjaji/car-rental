@@ -2,14 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { useToast } from "../components/Toast";
-import { getErrorMessage, logError } from "../utils/apiErrorHandler";
 
 const BookCar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const { addToast } = useToast();
   const [selectedCar, setSelectedCar] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -45,13 +42,12 @@ const BookCar = () => {
       setLoading(false);
     } else {
       // If no car in state, redirect to cars page
-      addToast("No car selected. Redirecting to cars page.", "info");
       navigate('/cars');
     }
     
     // Fetch locations
     fetchLocations();
-  }, [isAuthenticated, navigate, location.state, addToast]);
+  }, [isAuthenticated, navigate, location.state]);
 
   // Calculate total days and price when dates change
   useEffect(() => {
@@ -81,14 +77,9 @@ const BookCar = () => {
         { _id: "3", name: "North Suburb" },
         { _id: "4", name: "South Suburb" }
       ]);
-    } catch (error) {
-      // Log error for debugging
-      logError(error, "fetchLocations");
-      
-      // Show error toast
-      addToast("Couldn't load locations. Using default values.", "warning");
-      
-      // Use fallback locations
+    } catch (err) {
+      console.error("Error fetching locations:", err);
+      // Use fallback locations if API fails
       setLocations([
         { _id: "1", name: "Airport" },
         { _id: "2", name: "City Center" },
@@ -118,10 +109,7 @@ const BookCar = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      addToast("Please fix the errors in the form.", "error");
-      return;
-    }
+    if (!validateForm()) return;
     
     try {
       const bookingData = {
@@ -135,9 +123,6 @@ const BookCar = () => {
       
       const response = await axios.post("/api/bookings", bookingData);
       
-      // Show success toast
-      addToast("Booking created successfully!", "success");
-      
       // Redirect to bookings page with success message
       navigate('/bookings', { 
         state: { 
@@ -146,19 +131,11 @@ const BookCar = () => {
         }
       });
       
-    } catch (error) {
-      // Log error for debugging
-      logError(error, "createBooking");
-      
-      // Get user-friendly error message
-      const errorMessage = getErrorMessage(error);
-      
-      // Show error in form and as toast
+    } catch (err) {
+      console.error("Error creating booking:", err);
       setFormErrors({
-        submit: errorMessage
+        submit: err.response?.data?.message || "Failed to create booking. Please try again."
       });
-      
-      addToast(errorMessage, "error");
       
       // Scroll to top to show error message
       window.scrollTo(0, 0);
@@ -203,7 +180,6 @@ const BookCar = () => {
                 onError={(e) => {
                   e.target.src = "/images/default-car.jpg";
                   e.target.onerror = null;
-                  addToast("Couldn't load car image. Using default image.", "info");
                 }}
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">

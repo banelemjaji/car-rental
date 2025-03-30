@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "../components/Toast";
-import { getErrorMessage, logError } from "../utils/apiErrorHandler";
 
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -14,7 +12,6 @@ const Bookings = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { addToast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -27,9 +24,6 @@ const Bookings = () => {
       setShowSuccessMessage(true);
       setBookingId(location.state.bookingId);
       
-      // Show toast notification
-      addToast("Your booking has been successfully created!", "success");
-      
       // Remove the state from history to prevent showing message on refresh
       window.history.replaceState({}, document.title);
       
@@ -40,7 +34,7 @@ const Bookings = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, navigate, location.state, addToast]);
+  }, [isAuthenticated, navigate, location.state]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -50,27 +44,23 @@ const Bookings = () => {
         const response = await axios.get("/api/bookings/my");
         setBookings(response.data?.data || []);
         setLoading(false);
-      } catch (error) {
-        logError(error, "fetchBookings");
-        const errorMessage = getErrorMessage(error);
-        setError(errorMessage);
-        addToast(errorMessage, "error");
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
+        setError(err.message || "Failed to fetch bookings");
         setLoading(false);
       }
     };
 
     fetchBookings();
-  }, [isAuthenticated, addToast]);
+  }, [isAuthenticated]);
 
   const handleCancelBooking = async (bookingId) => {
     try {
       await axios.delete(`/api/bookings/${bookingId}`);
       setBookings(bookings.filter(booking => booking._id !== bookingId));
-      addToast("Booking cancelled successfully", "success");
-    } catch (error) {
-      logError(error, "cancelBooking");
-      const errorMessage = getErrorMessage(error);
-      addToast(errorMessage, "error");
+    } catch (err) {
+      console.error("Error cancelling booking:", err);
+      setError(err.message || "Failed to cancel booking");
     }
   };
 
@@ -120,12 +110,6 @@ const Bookings = () => {
           <div className="text-center py-10">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-red-600">{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Try Again
-              </button>
             </div>
           </div>
         ) : bookings.length === 0 ? (
@@ -146,7 +130,7 @@ const Bookings = () => {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">
-                        {booking.car.brand} {booking.car.model}
+                        {booking.car ? `${booking.car.brand} ${booking.car.model}` : 'Car details not available'}
                       </h2>
                       <div className="mt-2 space-y-1">
                         <p className="text-gray-600">
@@ -156,10 +140,10 @@ const Bookings = () => {
                           <span className="font-medium">End Date:</span> {formatDate(booking.endDate)}
                         </p>
                         <p className="text-gray-600">
-                          <span className="font-medium">Pickup Location:</span> {booking.pickupLocation}
+                          <span className="font-medium">Pickup Location:</span> {booking.pickupLocation || "N/A"}
                         </p>
                         <p className="text-gray-600">
-                          <span className="font-medium">Dropoff Location:</span> {booking.dropoffLocation}
+                          <span className="font-medium">Dropoff Location:</span> {booking.dropoffLocation || "N/A"}
                         </p>
                         <p className="text-gray-600">
                           <span className="font-medium">Total Price:</span> R{booking.totalPrice.toFixed(2)}
@@ -199,4 +183,4 @@ const Bookings = () => {
   );
 };
 
-export default Bookings; 
+export default Bookings;

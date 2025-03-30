@@ -12,6 +12,16 @@ const bookingSchema = new mongoose.Schema(
       enum: ["pending", "confirmed", "cancelled"],
       default: "pending",
     },
+    pickupLocation: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    dropoffLocation: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

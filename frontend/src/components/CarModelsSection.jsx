@@ -47,6 +47,7 @@ const CarModelsSection = ({ cars, selectedCar, setSelectedCar, loading, error })
                     src={selectedCar.image}
                     alt={`${selectedCar.brand} ${selectedCar.model}`}
                     className="w-full h-full object-contain"
+                    loading='lazy'
                     onError={(e) => {
                       e.target.src = "/images/default-car.jpg";
                       e.target.onerror = null;
@@ -81,21 +82,10 @@ const CarModelsSection = ({ cars, selectedCar, setSelectedCar, loading, error })
                   <p className="flex justify-between">
                     <span className="font-medium">Availability:</span>
                     <span className={selectedCar.available ? "text-green-600" : "text-red-600"}>
-                      {selectedCar.available ? "Available" : "Unavailable"}
+                      {selectedCar.available ? "Available" : "Booked"}
                     </span>
                   </p>
-                </div>
-                
-                <button 
-                  className={`py-3 px-6 rounded font-medium text-lg ${
-                    selectedCar.available 
-                      ? "bg-[#EB5A3C] text-white hover:bg-[#d44a2e]" 
-                      : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                  } transition`}
-                  disabled={!selectedCar.available}
-                >
-                  {selectedCar.available ? "Rent Now" : "Not Available"}
-                </button>
+                </div> 
               </div>
             </div>
           )}

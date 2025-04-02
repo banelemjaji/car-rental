@@ -72,19 +72,15 @@ const BookCar = () => {
     try {
       const response = await axios.get("/api/locations");
       setLocations(response.data?.data || [
-        { _id: "1", name: "Airport" },
-        { _id: "2", name: "City Center" },
-        { _id: "3", name: "North Suburb" },
-        { _id: "4", name: "South Suburb" }
+        { _id: "1", name: "Durban - Pinetown Centre" },
+        { _id: "2", name: "Durban - Umhlanga Rocks" },
       ]);
     } catch (err) {
       console.error("Error fetching locations:", err);
       // Use fallback locations if API fails
       setLocations([
-        { _id: "1", name: "Airport" },
-        { _id: "2", name: "City Center" },
-        { _id: "3", name: "North Suburb" },
-        { _id: "4", name: "South Suburb" }
+        { _id: "1", name: "Durban - Pinetown Centre" },
+        { _id: "2", name: "Durban - Umhlanga Rocks" },
       ]);
     }
   };

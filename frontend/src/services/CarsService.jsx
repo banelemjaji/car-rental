@@ -1,4 +1,4 @@
-const BASE_URL = "https://car-rental-backend-rar3.onrender.com";
+const BASE_URL = "https://car-rental-backend-rar3.onrender.com/api/cars";
 
 export const fetchCars = async () => {
   const response = await fetch(BASE_URL);

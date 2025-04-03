@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5001/api/cars"; // Update with your backend port if different
+const BASE_URL = "https://car-rental-backend-rar3.onrender.com";
 
 export const fetchCars = async () => {
   const response = await fetch(BASE_URL);

@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://car-rental-frontend-tfii.onrender.com',
+        target: 'https://car-rental-backend-rar3.onrender.com',
         changeOrigin: true,
       },
     },

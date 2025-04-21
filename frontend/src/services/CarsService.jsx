@@ -1,4 +1,4 @@
-const BASE_URL = "https://car-rental-backend-rar3.onrender.com/api/cars";
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL || "/api"}/cars`;
 
 export const fetchCars = async () => {
   const response = await fetch(BASE_URL);

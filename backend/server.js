@@ -13,7 +13,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "https://car-rental-frontend-g4rb.onrender.com"],
   credentials: true
 }));
 app.use(cookieParser());

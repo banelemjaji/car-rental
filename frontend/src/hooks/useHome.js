@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 
 export const useHome = () => {
@@ -41,7 +41,7 @@ export const useHome = () => {
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const response = await axios.get("/api/cars");
+        const response = await api.get("/api/cars");
         console.log("Cars from API:", response.data);
         
         if (response.data?.data && response.data.data.length > 0) {

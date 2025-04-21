@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -47,7 +47,7 @@ const SignUp = () => {
     setError("");
     
     try {
-      await axios.post("/api/auth/register", {
+      await api.post("/api/auth/register", {
         name,
         email,
         password

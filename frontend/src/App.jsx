@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import axios from "axios";
+
 import Layout from "./components/Layout.jsx";
 import Home from "./pages/Home.jsx";
 import Cars from "./pages/Cars.jsx";
@@ -14,13 +14,15 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 // Axios response interceptor setup component
+import api from "./api";
+
 const AxiosInterceptor = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
   useEffect(() => {
     // Add a response interceptor to handle auth errors
-    const interceptor = axios.interceptors.response.use(
+    const interceptor = api.interceptors.response.use(
       response => response,
       error => {
         // Handle token expiration
@@ -48,7 +50,7 @@ const AxiosInterceptor = () => {
 
     // Clean up interceptor on unmount
     return () => {
-      axios.interceptors.response.eject(interceptor);
+      api.interceptors.response.eject(interceptor);
     };
   }, [navigate, logout]);
 

@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 
 const AuthContext = createContext();
 
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(storedUser));
       
       // Add token to axios default headers
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       
       // Set token expiry if available
       if (expiry) {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     
     const refreshTimer = setTimeout(async () => {
       try {
-        const response = await axios.post("/api/auth/refresh-token");
+        const response = await api.post("/api/auth/refresh-token");
         const { accessToken, expiresAt } = response.data;
         
         // Update token in storage and headers
@@ -79,14 +79,14 @@ export const AuthProvider = ({ children }) => {
     }
     
     // Set token in axios headers
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   };
 
   // Logout user
   const logout = async () => {
     try {
       // Call logout API
-      await axios.post("/api/auth/logout");
+      await api.post("/api/auth/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       localStorage.removeItem("tokenExpiry");
-      delete axios.defaults.headers.common["Authorization"];
+      delete api.defaults.headers.common["Authorization"];
       setUser(null);
       setTokenExpiryTime(null);
     }

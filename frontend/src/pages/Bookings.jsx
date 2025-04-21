@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -41,7 +41,7 @@ const Bookings = () => {
 
     const fetchBookings = async () => {
       try {
-        const response = await axios.get("/api/bookings/my");
+        const response = await api.get("/api/bookings/my");
         setBookings(response.data?.data || []);
         setLoading(false);
       } catch (err) {
@@ -56,7 +56,7 @@ const Bookings = () => {
 
   const handleCancelBooking = async (bookingId) => {
     try {
-      await axios.delete(`/api/bookings/${bookingId}`);
+      await api.delete(`/api/bookings/${bookingId}`);
       setBookings(bookings.filter(booking => booking._id !== bookingId));
     } catch (err) {
       console.error("Error cancelling booking:", err);

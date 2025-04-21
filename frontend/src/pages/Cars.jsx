@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -27,7 +27,7 @@ const Cars = () => {
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const response = await axios.get("/api/cars");
+        const response = await api.get("/api/cars");
         setCars(response.data?.data || []);
         setLoading(false);
       } catch (err) {
@@ -38,24 +38,12 @@ const Cars = () => {
     };
 
     const fetchLocations = async () => {
-      try {
-        const response = await axios.get("/api/locations");
-        setLocations(response.data?.data || [
-          { _id: "1", name: "Airport" },
-          { _id: "2", name: "City Center" },
-          { _id: "3", name: "North Suburb" },
-          { _id: "4", name: "South Suburb" }
-        ]);
-      } catch (err) {
-        console.error("Error fetching locations:", err);
-        // Use fallback locations if API fails
-        setLocations([
-          { _id: "1", name: "Airport" },
-          { _id: "2", name: "City Center" },
-          { _id: "3", name: "North Suburb" },
-          { _id: "4", name: "South Suburb" }
-        ]);
-      }
+      setLocations([
+        { _id: "1", name: "Airport" },
+        { _id: "2", name: "City Center" },
+        { _id: "3", name: "North Suburb" },
+        { _id: "4", name: "South Suburb" }
+      ]);
     };
 
     fetchCars();
@@ -126,7 +114,7 @@ const Cars = () => {
         totalPrice
       };
       
-      const response = await axios.post("/api/bookings", bookingData);
+      const response = await api.post("/api/bookings", bookingData);
       
       // Close modal and show success message
       handleCloseModal();

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 
 const BookCar = () => {
@@ -69,20 +69,10 @@ const BookCar = () => {
   }, [pickupDate, dropoffDate, selectedCar]);
 
   const fetchLocations = async () => {
-    try {
-      const response = await axios.get("/api/locations");
-      setLocations(response.data?.data || [
-        { _id: "1", name: "Durban - Pinetown Centre" },
-        { _id: "2", name: "Durban - Umhlanga Rocks" },
-      ]);
-    } catch (err) {
-      console.error("Error fetching locations:", err);
-      // Use fallback locations if API fails
-      setLocations([
-        { _id: "1", name: "Durban - Pinetown Centre" },
-        { _id: "2", name: "Durban - Umhlanga Rocks" },
-      ]);
-    }
+    setLocations([
+      { _id: "1", name: "Durban - Pinetown Centre" },
+      { _id: "2", name: "Durban - Umhlanga Rocks" },
+    ]);
   };
 
   const validateForm = () => {
@@ -117,7 +107,7 @@ const BookCar = () => {
         totalPrice
       };
       
-      const response = await axios.post("/api/bookings", bookingData);
+      const response = await api.post("/api/bookings", bookingData);
       
       // Redirect to bookings page with success message
       navigate('/bookings', { 

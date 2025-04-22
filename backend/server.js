@@ -24,17 +24,27 @@ app.use((err, req, res, next) => {
 });
 
 
-// Routes
-app.get("/", (req, res) => {
-  res.send("Car Rental API is running...");
-});
+// Serve static files from the frontend build
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/bookings", bookingRoutes);
 
 // Connect to MongoDB
 connectDB();
+
+// Catch-all: send index.html for any other route
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist", "index.html"));
+});
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

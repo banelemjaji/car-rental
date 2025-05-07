@@ -7,6 +7,10 @@ const Cars = () => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 10;
   const [selectedCar, setSelectedCar] = useState(null);
   const [showRentModal, setShowRentModal] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -26,9 +30,12 @@ const Cars = () => {
 
   useEffect(() => {
     const fetchCars = async () => {
+      setLoading(true);
       try {
-        const response = await api.get("/api/cars");
+        const response = await api.get(`/api/cars?page=${page}&limit=${limit}`);
         setCars(response.data?.data || []);
+        setPages(response.data?.pages || 1);
+        setTotal(response.data?.total || 0);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching cars:", err);
@@ -48,7 +55,7 @@ const Cars = () => {
 
     fetchCars();
     fetchLocations();
-  }, []);
+  }, [page]);
 
   // Calculate total days and price when dates change
   useEffect(() => {
@@ -440,10 +447,28 @@ const Cars = () => {
             </div>
           </div>
         )}
+        {/* End main content */}
       </div>
+      {/* Pagination Controls */}
+      <div className="flex justify-center mt-8 space-x-4">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1 || loading}
+          className={`px-4 py-2 rounded-md border ${page === 1 || loading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          Previous
+        </button>
+        <span className="px-4 py-2">Page {page} of {pages}</span>
+        <button
+          onClick={() => setPage((p) => Math.min(pages, p + 1))}
+          disabled={page === pages || loading}
+          className={`px-4 py-2 rounded-md border ${page === pages || loading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+        >
+          Next
+        </button>
       </div>
+    </div>
     );
   };
   
   export default Cars;
-  

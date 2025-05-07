@@ -8,7 +8,8 @@ const CarModelsSection = ({ cars, selectedCar, setSelectedCar, loading, error })
       
       {loading ? (
         <div className="text-center py-10">
-          <p className="text-xl">Loading available cars...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EB5A3C] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading cars...</p>
         </div>
       ) : error ? (
         <div className="text-center py-10 text-red-600">

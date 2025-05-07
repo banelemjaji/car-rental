@@ -21,8 +21,30 @@ const uploadImageToCloudinary = async (filePath) => {
 // @access  Public
 export const getCars = async (req, res) => {
   try {
-    const cars = await Car.find();
-    res.status(200).json({ success: true, data: cars });
+    // Parse pagination query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Only select necessary fields
+    const fields = 'brand model year pricePerDay available image transmission seats doors luggageCapacity';
+
+    // Fetch paginated cars
+    const cars = await Car.find()
+      .select(fields)
+      .skip(skip)
+      .limit(limit);
+
+    // Get total count for pagination
+    const total = await Car.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      data: cars,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error("Error fetching cars:", error.message);
     res.status(500).json({ message: "Internal server error" });

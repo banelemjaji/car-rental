@@ -35,7 +35,9 @@ The Car Rental App is a web-based platform designed to simplify the process of r
 
 ## Screenshots/GIFs
 
-*(Include relevant screenshots or GIFs demonstrating the app’s features here. If you don't have them yet, add them later.)*
+Check out a quick walkthrough of the application below:
+
+![Project Walkthrough GIF](images/car_rental.gif)
 
 ## Setup and Installation
 
